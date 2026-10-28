@@ -1,14 +1,16 @@
 # MNIST ile MLP Tabanlı El Yazısı Rakam Tanıma
 
-Ders ödevi: MNIST üzerinde **sıfırdan** eğitilmiş bir MLP (CNN yok, hazır model yok) ve kendi el yazımla yazdığım okul numarası (`23120205021`) üzerinde test.
+Derin öğrenme dersi ödevi. MNIST'te sıfırdan bir MLP eğittim (CNN yok, hazır model yok), sonra iPad'de kendi el yazımla yazdığım okul numarasını (`23120205021`) bu modele tahmin ettirdim.
 
 ## Çalıştırma
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install torch torchvision matplotlib numpy pillow
+pip install -r requirements.txt
 python mnist_mlp.py                                   # eğitim + deneyler -> outputs/
 python predict_digits.py my_digits/numara.jpg --label 23120205021
+python ablation_preprocess.py                         # önişleme adımlarını tek tek kapatma denemesi
 ```
+Notebook'u (`mnist_mlp.ipynb`) açıp hücreleri sırayla çalıştırmak da aynı sonucu verir.
 
 ## Veri ve bölme
 | Küme | Boyut | Kullanım |
@@ -17,7 +19,7 @@ python predict_digits.py my_digits/numara.jpg --label 23120205021
 | Validation | 10000 | hiperparametre/model seçimi |
 | Test | 10000 | **sadece en sonda**, baseline + validation'ın seçtiği model için bir kez |
 
-MNIST'in 60k eğitim seti, sabit seed (42) ile 50k/10k bölündü; 10k test seti hiçbir seçimde kullanılmadı. Girdi 28×28 → 784'e düzleştirildi, `(x/255 - 0.1307) / 0.3081` ile normalize edildi.
+MNIST'in 60k'lık eğitim setini seed 42 ile 50k/10k böldüm. 10k'lık test setine model seçerken hiç bakmadım. Görüntüler 784'e düzleştirildi ve `(x/255 - 0.1307) / 0.3081` ile normalize edildi.
 
 ## Deney 1 – Temel MLP
 784 → 256 → ReLU → 128 → ReLU → 10, CrossEntropyLoss (softmax dahil), Adam (lr=1e-3), batch 128, 15 epoch, seed 42, CPU.
@@ -47,32 +49,45 @@ Hepsi aynı seed, aynı bölme, 15 epoch, batch 128. Metrikler son epoch'tan. Te
 
 ![karşılaştırma](outputs/comparison_val.png)
 
-**En iyi (validation'a göre): `sgd_momentum`.**
+Validation accuracy'ye göre en iyisi `sgd_momentum` çıktı.
 
-### Yorum
-- **Ağ kapasitesi:** 64-32 ağı (val %97.25) baseline'dan (%97.84) belirgin kötü; kapasite yetersiz. 512-256-128 (%97.94) neredeyse aynı, yani kapasiteyi artırmak 2× süreye rağmen neredeyse hiç kazandırmadı.
-- **Learning rate:** Adam'da 1e-2 hem loss'u hem accuracy'yi bozdu (val loss 0.20); adımlar çok büyük, minimumun etrafında zıplıyor.
-- **Optimizer:** SGD+momentum (lr 0.05) en iyi validation accuracy'yi verdi. Ancak train accuracy %100 ve train loss ≈ 0; model train setini ezberlemiş, genelleme farkı (~%1.5) baseline'dan küçük değil.
-- **Dropout:** val loss'u en düşük yapan config (0.072). Train-val farkını daralttı ama accuracy'de anlamlı bir kazanç yok.
-- **Overfitting:** Tüm configlerde train acc > val acc ve val loss, train loss'tan çok yüksek; 15 epoch'ta MLP train setini neredeyse ezberliyor. Tek seed ile çalıştığım için configler arasındaki ~%0.1'lik farklar gürültü sınırında; yalnızca büyük farklar (64-32 ağı, lr=1e-2) güvenilir.
+### Sonuçlar hakkında
+64-32'lik küçük ağ baseline'ın gerisinde kaldı (val %97.25, baseline %97.84), yani o kadar küçük olmamalı. Tersine, 512-256-128 ağı baseline'dan sadece %0.1 iyi ama iki katından uzun sürdü; büyütmenin faydası yok.
+
+Adam'da lr'yi 1e-2'ye çıkarınca val loss 0.20'ye fırladı, accuracy %96.56'ya düştü. Adımlar çok büyük olduğu için minimumun etrafında zıplıyor olmalı.
+
+SGD+momentum en iyi val accuracy'yi verdi ama train accuracy'si %100, train loss'u neredeyse sıfır. Train setini ezberlemiş. Train ile val arasındaki fark (~%1.5) baseline'dan küçük değil, o yüzden "en iyi" demek biraz fazla iddialı. Dropout ise accuracy'yi değiştirmedi, ama val loss'u en düşük yapan o oldu (0.072).
+
+Genel olarak her config'te train acc val acc'den yüksek ve val loss train loss'un çok üstünde; 15 epoch'ta MLP train setini epey ezberliyor. Sadece tek seed ile çalıştım, bu yüzden config'ler arasındaki %0.1'lik farkları gürültü sayıyorum. Küçük ağ ve lr=1e-2 farkları ise yeterince büyük.
 
 ## Kendi el yazım
-iPad'de Apple Pencil ile, beyaz zemin üzerine siyah kalemle okul numaramı yazdım: `my_digits/numara.jpg` (`23120205021`).
+Numarayı iPad'de Apple Pencil ile, beyaz zemine siyah kalın kalemle yazdım (`my_digits/numara.jpg`).
 
-Önişleme (`predict_digits.py`): gri tonlama → zemin açık olduğu için renk tersleme (MNIST: siyah zemin, beyaz rakam) → rakamları ayırma → her rakamı en-boy oranı korunarak 20×20'ye sığdırma → ağırlık merkezine göre 28×28'in ortasına yerleştirme → MNIST ile aynı normalizasyon. Önişlenmiş rakamlar: `outputs/preprocessed_numara.png`.
+Modele vermeden önce (`predict_digits.py`) şunları yapıyorum: gri tonlama, renk tersleme (MNIST'te zemin siyah, rakam beyaz; benim görselde tersi), rakamları ayırma, her rakamı en-boy oranını bozmadan 20×20'ye sığdırma, ağırlık merkezine göre 28×28'in ortasına koyma, MNIST'tekiyle aynı normalizasyon.
 
 ![önişlenmiş](outputs/preprocessed_numara.png)
 
-**Sonuç: baseline 11/11, en iyi model (SGD+momentum) 11/11 doğru.** En düşük güven: baseline'da ilk rakam `2` (0.91) ve son rakam `1` (0.86).
+İki model de 11 rakamın 11'ini doğru tahmin etti. Baseline'ın en az emin olduğu rakamlar ilk `2` (0.91) ve son `1` (0.86).
 
-**Dürüstlük notu:** `2-0`, `0-2`, `0-2-1` rakamları birbirine değdiği için otomatik ayırma önce yalnızca 8 parça buldu. Parçaları, beklenen rakam sayısını (11, `--label` uzunluğu) kullanarak en az mürekkep olan noktadan böldüm. Yani ayırma adımı etiketin *uzunluğunu* biliyor (rakam değerlerini değil); model tahmini bundan bağımsız.
+Rakamların ayrılması tam otomatik olmadı. `2-0`, `0-2` ve `0-2-1` birbirine değdiği için kod önce 8 parça buldu. Bu parçaları, 11 rakam olduğunu bilerek (`--label` uzunluğu) en az mürekkep olan yerden böldüm. Yani ayırma adımı rakam sayısını biliyor, hangi rakamlar olduğunu bilmiyor; tahmin bundan etkilenmiyor.
 
-### Değerlendirme: MNIST testi vs gerçek el yazısı
-MNIST test accuracy %97.9–98.3, benim numaramda %100 ama **11 rakamlık örneklem çok küçük**; bu "gerçek dünyada daha iyi" demek değil, yalnızca bu yazıda hata çıkmadığını gösteriyor. Distribution shift'in izleri yine de görülüyor: SGD modelinde güven değerleri ~1.00 iken baseline'da `2` ve `1`'de 0.86-0.91'e düşüyor. Başarının büyük kısmı önişlemeden geliyor: kalın kalem, temiz beyaz zemin, rakamların ortalanıp 20×20'ye ölçeklenmesi MNIST'e yaklaştırıyor. Bu adımlar (özellikle renk tersleme ve ortalama) olmadan model büyük ihtimalle çok daha kötü olurdu; bunu ayrıca denemedim. Kağıt+telefon fotoğrafı (gölge, ince çizgi, eğik açı) ile daha belirgin bir shift beklenir.
+### MNIST test sonucu ile kendi el yazım arasındaki fark
+MNIST testinde %97.9-98.3 aldım, kendi numaramda %100. Ama 11 rakamla "gerçek dünyada daha iyi" diyemem, sadece bu yazıda hata çıkmadı. Farkı daha çok güven değerlerinde görüyorum: SGD modeli her rakamda ~1.00, baseline ise `2` ve `1`'de 0.86-0.91'e düşüyor.
+
+Başarının önişlemeden geldiğini `ablation_preprocess.py` ile denedim. Aynı modellere aynı rakamları adımları kapatarak verdim:
+
+| Önişleme | baseline | sgd_momentum |
+|---|---|---|
+| Tam önişleme | 11/11 | 11/11 |
+| Renk tersleme yok | 0/11 | 0/11 |
+| 20×20 sığdırma + ortalama yok (kırpıp 28×28'e esnetme) | 1/11 | 2/11 |
+
+Yani modeller rakamı değil, "MNIST gibi görünen" girdiyi tanıyor. Rakam MNIST'teki gibi ortalanıp ölçeklenmeyince model neredeyse hiç tutturamıyor. Bu, training verisi ile gerçek dünya verisi arasındaki farkın (distribution shift) en net görünen hali. Kağıda yazıp telefonla çekseydim (gölge, ince çizgi, eğik açı) büyük ihtimalle önişleme daha çok zorlanırdı; bunu denemedim.
 
 ## Dosyalar
 - `mnist_mlp.ipynb` – aynı akış, çıktılar/grafikler notebook içinde (önce buna bak)
 - `mnist_mlp.py` – veri, model, deneyler, grafikler (script sürümü)
 - `predict_digits.py` – el yazısı önişleme + tahmin
+- `ablation_preprocess.py` – önişleme adımlarını kapatma denemesi
 - `my_digits/numara.jpg` – okul numaram
-- `outputs/` – grafikler, `results.json`, `train_log.txt`, model ağırlıkları
+- `outputs/` – grafikler, `results.json`, loglar, model ağırlıkları

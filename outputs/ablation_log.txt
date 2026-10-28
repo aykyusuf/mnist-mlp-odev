@@ -1,0 +1,3 @@
+tam onisleme           {'baseline': '23120205021 (11/11)', 'sgd_momentum': '23120205021 (11/11)'}
+renk tersleme yok      {'baseline': '37773377337 (0/11)', 'sgd_momentum': '77771717777 (0/11)'}
+20x20 + ortalama yok   {'baseline': '73713333372 (1/11)', 'sgd_momentum': '77923179371 (2/11)'}
