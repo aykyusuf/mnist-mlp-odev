@@ -1,0 +1,130 @@
+{
+  "seed": 42,
+  "split": {
+    "train": 50000,
+    "val": 10000,
+    "test": 10000
+  },
+  "best_by_validation": "sgd_momentum",
+  "results": [
+    {
+      "cfg": {
+        "name": "baseline",
+        "hidden": [
+          256,
+          128
+        ],
+        "optimizer": "adam",
+        "lr": 0.001,
+        "batch_size": 128,
+        "epochs": 15
+      },
+      "train_time_sec": 3.5,
+      "final_train_loss": 0.00870992472395301,
+      "final_val_loss": 0.0985301211476326,
+      "final_train_acc": 0.99698,
+      "final_val_acc": 0.9784,
+      "best_val_acc": 0.9784,
+      "test_acc": 0.9792
+    },
+    {
+      "cfg": {
+        "name": "kucuk_agi",
+        "hidden": [
+          64,
+          32
+        ],
+        "optimizer": "adam",
+        "lr": 0.001,
+        "batch_size": 128,
+        "epochs": 15
+      },
+      "train_time_sec": 2.7,
+      "final_train_loss": 0.0245955540984869,
+      "final_val_loss": 0.10888630598783493,
+      "final_train_acc": 0.99198,
+      "final_val_acc": 0.9725,
+      "best_val_acc": 0.9728
+    },
+    {
+      "cfg": {
+        "name": "buyuk_ag",
+        "hidden": [
+          512,
+          256,
+          128
+        ],
+        "optimizer": "adam",
+        "lr": 0.001,
+        "batch_size": 128,
+        "epochs": 15
+      },
+      "train_time_sec": 7.9,
+      "final_train_loss": 0.009399520084261894,
+      "final_val_loss": 0.09823381304740905,
+      "final_train_acc": 0.99684,
+      "final_val_acc": 0.9794,
+      "best_val_acc": 0.9795
+    },
+    {
+      "cfg": {
+        "name": "yuksek_lr",
+        "hidden": [
+          256,
+          128
+        ],
+        "optimizer": "adam",
+        "lr": 0.01,
+        "batch_size": 128,
+        "epochs": 15
+      },
+      "train_time_sec": 4.2,
+      "final_train_loss": 0.07568322241306305,
+      "final_val_loss": 0.20019164383411409,
+      "final_train_acc": 0.98112,
+      "final_val_acc": 0.9656,
+      "best_val_acc": 0.9685
+    },
+    {
+      "cfg": {
+        "name": "sgd_momentum",
+        "hidden": [
+          256,
+          128
+        ],
+        "optimizer": "sgd",
+        "lr": 0.05,
+        "momentum": 0.9,
+        "batch_size": 128,
+        "epochs": 15
+      },
+      "train_time_sec": 2.6,
+      "final_train_loss": 0.00015592231473419816,
+      "final_val_loss": 0.08773181140422821,
+      "final_train_acc": 1.0,
+      "final_val_acc": 0.9846,
+      "best_val_acc": 0.9846,
+      "test_acc": 0.9826
+    },
+    {
+      "cfg": {
+        "name": "dropout0.3",
+        "hidden": [
+          256,
+          128
+        ],
+        "optimizer": "adam",
+        "lr": 0.001,
+        "batch_size": 128,
+        "epochs": 15,
+        "dropout": 0.3
+      },
+      "train_time_sec": 4.2,
+      "final_train_loss": 0.014415325857698917,
+      "final_val_loss": 0.07189493477344513,
+      "final_train_acc": 0.99556,
+      "final_val_acc": 0.979,
+      "best_val_acc": 0.9812
+    }
+  ]
+}
